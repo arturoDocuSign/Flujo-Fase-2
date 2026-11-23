@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="glean-artifact-type" content="visual_content">
+<title>Flujo CLM por tareas y decisiones</title>
+<style>
+:root {
+  --artifact-background: #ffffff;
+  --artifact-background-light: #f1f3f6;
+  --artifact-background-mid: #e9ecf1;
+  --artifact-border-light: #e3e6ec;
+  --artifact-border-dark: #cdd2db;
+  --artifact-primary-brand: #3559e6;
+  --artifact-primary-highlight: #0d0f14;
+  --artifact-primary-hover: #2442b8;
+  --artifact-selected: #eaeefc;
+  --artifact-text-primary: #11141a;
+  --artifact-text-secondary: #5c6470;
+  --artifact-text-highlight: #e8eefc;
+  --artifact-positive-background: #e8f6ee;
+  --artifact-positive-text: #11141a;
+  --artifact-positive: #159a6a;
+  --artifact-negative: #dc4c4c;
+  --artifact-warning: #9a6700;
+  --artifact-warning-background: #fff5d8;
+}
+html[data-theme='dark'] {
+  --artifact-background: #0a0b0e;
+  --artifact-background-light: #121419;
+  --artifact-background-mid: #181b22;
+  --artifact-border-light: #23262e;
+  --artifact-border-dark: #343844;
+  --artifact-primary-brand: #6a92ff;
+  --artifact-primary-highlight: #f5f7fb;
+  --artifact-primary-hover: #88a8ff;
+  --artifact-selected: #1a2030;
+  --artifact-text-primary: #eef0f4;
+  --artifact-text-secondary: #9aa0ad;
+  --artifact-text-highlight: #14213d;
+  --artifact-positive-background: #0e2a1d;
+  --artifact-positive-text: #c8f5da;
+  --artifact-positive: #46d39a;
+  --artifact-negative: #ff6b6b;
+  --artifact-warning: #eac36a;
+  --artifact-warning-background: #2b2413;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--artifact-background);
+  color: var(--artifact-text-primary);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.58;
+  letter-spacing: -0.005em;
+}
+a { color: var(--artifact-primary-brand); }
+.shell { max-width: 1100px; margin: 0 auto; padding: 44px 28px 70px; }
+.eyebrow, .kicker, .field-label, th {
+  font-family: "SF Mono", "IBM Plex Mono", "Cascadia Code", Consolas, monospace;
+  font-size: 11px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--artifact-text-secondary);
+}
+.eyebrow { margin: 0 0 18px; }
+h1,h2,h3 { color: var(--artifact-text-primary); font-weight: 400; line-height: 1.08; letter-spacing: -.025em; }
+h1 { max-width: 860px; margin: 0; font-size: clamp(2.45rem, 6vw, 4.7rem); }
+.intro { max-width: 1020px; margin: 18px 0 24px; color: var(--artifact-text-secondary); font-size: 18px; }
+.hero { padding: 0 0 30px; border-bottom: 1px solid var(--artifact-border-light); }
+.route-tools { display: flex; gap: 8px; flex-wrap: wrap; margin: 24px 0 6px; }
+.route-tools button {
+  appearance: none; border: 1px solid var(--artifact-border-dark); border-radius: 999px;
+  background: var(--artifact-background); color: var(--artifact-text-primary); padding: 8px 12px;
+  font: inherit; font-size: 13px; cursor: pointer;
+}
+.route-tools button:hover, .route-tools button[aria-pressed="true"] {
+  border-color: var(--artifact-primary-brand); background: var(--artifact-selected); color: var(--artifact-text-primary);
+}
+.route-tools button:focus-visible, a:focus-visible { outline: 2px solid var(--artifact-primary-brand); outline-offset: 3px; }
+.legend { display: flex; flex-wrap: wrap; gap: 18px; margin: 16px 0 0; color: var(--artifact-text-secondary); font-size: 13px; }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.swatch { width: 24px; border-top: 2px solid var(--artifact-primary-brand); }
+.swatch.dashed { border-top: 2px dashed var(--artifact-warning); }
+.layout { display: grid; grid-template-columns: 195px minmax(0,1fr); gap: 42px; align-items: start; margin-top: 34px; }
+.toc { position: sticky; top: 20px; padding: 8px 0; }
+.toc p { margin: 0 0 12px; }
+.toc a { display: block; padding: 8px 10px; margin: 3px 0; border-radius: 5px; text-decoration: none; color: var(--artifact-text-secondary); font-size: 13px; }
+.toc a:hover { background: var(--artifact-background-light); color: var(--artifact-text-primary); }
+.content { min-width: 0; }
+section { padding: 0 0 36px; margin: 0 0 34px; border-bottom: 1px solid var(--artifact-border-light); scroll-margin-top: 22px; }
+.section-head { margin-bottom: 18px; }
+.section-head .kicker { margin: 0 0 9px; }
+h2 { font-size: clamp(1.65rem, 3vw, 2.25rem); margin: 0; }
+.section-summary { max-width: 800px; color: var(--artifact-text-secondary); margin: 10px 0 0; }
+.diagram { border: 1px solid var(--artifact-border-light); border-radius: 7px; padding: 14px; overflow: hidden; background: var(--artifact-background); }
+.diagram svg { display: block; width: 100%; height: auto; }
+svg text { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+svg .box { fill: var(--artifact-background); stroke: var(--artifact-border-dark); stroke-width: 1.4; }
+svg .box-main { fill: var(--artifact-selected); stroke: var(--artifact-primary-brand); stroke-width: 1.6; }
+svg .box-warn { fill: var(--artifact-warning-background); stroke: var(--artifact-warning); stroke-width: 1.4; stroke-dasharray: 5 4; }
+svg .box-success { fill: var(--artifact-positive-background); stroke: var(--artifact-positive); stroke-width: 1.3; }
+svg .label { fill: var(--artifact-text-primary); font-size: 14px; font-weight: 600; }
+svg .detail { fill: var(--artifact-text-secondary); font-size: 11px; }
+svg .tiny { fill: var(--artifact-text-secondary); font-size: 10px; }
+svg .edge { fill: none; stroke: var(--artifact-primary-brand); stroke-width: 1.8; marker-end: url(#arrow-blue); }
+svg .edge-neutral { fill: none; stroke: var(--artifact-border-dark); stroke-width: 1.7; marker-end: url(#arrow-neutral); }
+svg .edge-warn { fill: none; stroke: var(--artifact-warning); stroke-width: 1.7; stroke-dasharray: 5 4; marker-end: url(#arrow-warn); }
+svg [data-route] { transition: opacity .18s ease; }
+svg [data-route].dimmed { opacity: .16; }
+svg .node[data-route] { cursor: default; }
+.keyline { border-top: 1px solid var(--artifact-border-light); margin: 20px 0; }
+.route-copy { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 22px; margin-top: 18px; }
+.route-copy article { padding: 0 4px 0 0; }
+.route-copy h3, .subhead { margin: 0 0 7px; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.route-copy p, .route-copy ul { margin: 0; color: var(--artifact-text-secondary); font-size: 14px; }
+.route-copy ul { padding-left: 18px; }
+.caveat { margin: 18px 0 0; padding: 13px 15px; border: 1px dashed var(--artifact-warning); border-radius: 6px; background: var(--artifact-warning-background); color: var(--artifact-text-primary); font-size: 14px; }
+.roles-wrap { overflow-x: auto; border-top: 1px solid var(--artifact-border-light); }
+table { width: 100%; border-collapse: collapse; min-width: 610px; }
+th, td { padding: 12px 10px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--artifact-border-light); }
+th { font-size: 10px; }
+td { font-size: 13px; }
+td:first-child { font-weight: 600; color: var(--artifact-text-primary); }
+td:not(:first-child) { color: var(--artifact-text-secondary); }
+.notes { display: grid; gap: 11px; padding-left: 18px; color: var(--artifact-text-secondary); }
+.notes li { padding-left: 3px; }
+.source { margin-top: 25px; padding-top: 14px; border-top: 1px solid var(--artifact-border-light); color: var(--artifact-text-secondary); font-size: 12px; }
+.footer { padding-top: 6px; color: var(--artifact-text-secondary); font-size: 12px; }
+@media (max-width: 760px) {
+  .shell { padding: 30px 18px 54px; }
+  .layout { grid-template-columns: 1fr; gap: 18px; margin-top: 24px; }
+  .toc { position: static; display: flex; gap: 4px; overflow-x: auto; padding: 0 0 6px; border-bottom: 1px solid var(--artifact-border-light); }
+  .toc p { display: none; }
+  .toc a { white-space: nowrap; }
+  .route-copy { grid-template-columns: 1fr; gap: 14px; }
+  .diagram { padding: 7px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+@media print {
+  @page { size: auto !important; }
+  body { margin: 0; padding: .4in .6in; background: #fff; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .shell, main { max-width: 100% !important; width: 100% !important; }
+  .toc { position: static !important; }
+  section, .diagram, article, table { break-inside: avoid; }
+  .route-tools, .toc { display: none !important; }
+  svg [data-route].dimmed { opacity: 1 !important; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+<meta name="glean-provenance" content="{&quot;generation_id&quot;:&quot;28144e6dc9c24d74bd63eaf9119a9a29.5&quot;,&quot;generated_at&quot;:&quot;2026-11-23T19:48:10Z&quot;,&quot;model&quot;:&quot;Glean Assistant 570.222&quot;}"></head>
+<body>
+<main class="shell" data-glean-id="clm-flow-page">
+  <header class="hero" data-glean-id="clm-flow-introduction">
+    <p class="eyebrow">DOCUSIGN CLM · CONTRATOS FASE 2</p>
+    <h2>Proceso para OCESA Contratos Fase 2</h2>
+    <p class="intro">Diagrama de trabajo para revisar el recorrido principal, las devoluciones y la incorporación del <b style="color:#dc4c4c;">Motor de discrepancias</b>. Las líneas discontinuas muestran conexiones propuestas o pendientes de validar.</p>
+    <div class="route-tools" role="group" aria-label="Resaltar una ruta del diagrama">
+      <button type="button" data-focus="all" aria-pressed="true">Mostrar todo</button>
+      <button type="button" data-focus="normal" aria-pressed="false">Ruta habitual</button>
+      <button type="button" data-focus="return" aria-pressed="false">Devoluciones</button>
+      <button type="button" data-focus="external" aria-pressed="false">Revisión externa</button>
+      <button type="button" data-focus="discrepancy" aria-pressed="false">Motor de discrepancias</button>
+      <button type="button" data-focus="repse" aria-pressed="false">REPSE y firma</button>
+      <!--<button type="button" data-focus="uncertain" aria-pressed="false">Ajustes por realizar</button> -->
+    </div>
+    <div class="legend" aria-label="Leyenda del diagrama">
+      <span><i class="swatch" aria-hidden="true"></i>Conexión configurada</span>
+      <span><i class="swatch dashed" aria-hidden="true"></i>Conexión propuesta o pendiente de validar</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Secciones del documento">
+      <p class="eyebrow">EN ESTA PÁGINA</p>
+      <a href="#creacion">Creación de Solicitud</a>
+      <a href="#aprobacion">Aprobación</a>
+      <a href="#legal">Revisión de Legal</a>
+      <a href="#externa">Revisión externa</a>
+      <a href="#discrepancias">Motor de discrepancias</a>
+      <a href="#repse">REPSE y firma</a>
+      <a href="#roles">Responsables</a>
+      <!-- <a href="#validaciones">Ajustes de configuración</a> -->
+    </nav>
+
+    <div class="content">
+      <section id="creacion" data-glean-id="clm-creation-section">
+        <div class="section-head"><p class="kicker">01 · SOLICITANTE</p><h2>Creación de Solicitud</h2><p class="section-summary">El Solicitante inicia el proceso con la creación de una Solicitud.</p></div>
+        <div class="diagram" data-glean-id="clm-creation-diagram">
+          <svg viewBox="0 0 760 150" role="img" aria-label="El Solicitante crea la Solicitud; debe ser revisada y aprobada por el Aprobador para poder continuar">
+            <defs>
+              <marker id="arrow-blue-1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L8 5L1 9" fill="none" stroke="context-stroke" stroke-width="1.5"></path></marker>
+            </defs>
+            <path class="edge" marker-end="url(#arrow-blue-1)" data-route="normal" d="M380 73V91H700V210"></path>
+            <g class="node" data-route="normal"><rect class="box-main" x="270" y="18" width="220" height="55" rx="8"></rect><text class="label" x="380" y="42" text-anchor="middle">Solicitante crea Solicitud</text><text class="detail" x="380" y="59" text-anchor="middle">Tarea del equipo Solicitante</text></g>
+          </svg>
+        </div>
+      </section>
+      <section id="aprobacion" data-glean-id="clm-approval-section">
+        <div class="section-head"><p class="kicker">02 · APROBADOR</p><h2>Aprobación de Solicitud</h2><p class="section-summary">Solicitud aprobada: “Aprobar y Continuar” crea una tarea para Legal. “Rechazo” crea una tarea de devolución al Solicitante.</p></div>
+        <div class="diagram" data-glean-id="clm-approval-diagram">
+          <svg viewBox="0 0 760 300" role="img" aria-label="Al aprobar, la siguiente tarea esperada es para Legal; al rechazar, el flujo vuelve a Solicitante Revisa">
+            <defs>
+              <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L8 5L1 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></marker>
+              <marker id="arrow-neutral" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L8 5L1 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></marker>
+              <marker id="arrow-warn" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L8 5L1 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></marker>
+            </defs>
+            <path class="edge-neutral" data-route="normal return" d="M380 73V108"></path>
+            <path class="edge" data-route="return" d="M335 165C300 188 242 191 205 210"></path>
+            <path class="edge-warn" data-route="normal uncertain" d="M425 165C460 188 518 191 555 210"></path>
+            <path class="edge" data-route="normal" d="M380 73V91H700V210"></path>
+            <g class="node" data-route="normal return"><rect class="box-main" x="270" y="18" width="220" height="55" rx="8"></rect><text class="label" x="380" y="42" text-anchor="middle">Aprobador aprueba</text><text class="detail" x="380" y="59" text-anchor="middle">Tarea del equipo Aprobador</text></g>
+            <g class="node" data-route="return"><rect class="box" x="75" y="210" width="260" height="64" rx="8"></rect><text class="label" x="205" y="235" text-anchor="middle">Solicitante Revisa</text><text class="detail" x="205" y="254" text-anchor="middle">Tras rechazo o devolución de Legal</text></g>
+            <g class="node" data-route="normal"><rect class="box" x="425" y="210" width="260" height="64" rx="8"></rect><text class="label" x="555" y="235" text-anchor="middle">Crear tarea para Legal</text><text class="detail" x="555" y="254" text-anchor="middle">Tras “Aprobar y continuar”</text></g>
+            <g class="node" data-route="normal"><rect class="box" x="635" y="18" width="115" height="55" rx="8"></rect><text class="label" x="692" y="42" text-anchor="middle">Cancelar</text></g>
+            <text class="tiny" x="280" y="194" text-anchor="middle">Rechazar</text><text class="tiny" x="480" y="194" text-anchor="middle">Aprobar y continuar</text>
+          </svg>
+        </div>
+        <div class="route-copy">
+          <article data-glean-id="clm-requester-actions"><h3>Opciones del Solicitante</h3><p>“Enviar” pasa por la aprobación del Aprobador y, una vez aprobada la solicitud, la devuelve a Legal. “Sincronizar atributos” actualiza el documento de la solicitud con los atributos configurados y solo funciona si no existe contrato. “Cancelar” cancela el proceso.</p></article>
+          <article data-glean-id="clm-approval-caution"><h3>“Enviar a Legal” crea una tarea de revisión a Legal</h3><p>Solicitud confirmada o Acuerdo confirmado: “Enviar” crea una tarea para el Aprobador. “Enviar a Legal” crea una tarea de revisión para Legal si no existe contrato.</p></article>
+        </div>
+      </section>
+
+      <section id="legal" data-glean-id="clm-legal-section">
+        <div class="section-head"><p class="kicker">03 · REVISIÓN DE LEGAL</p><h2>Revisión de Legal</h2><p class="section-summary">Legal concentra la gestión del documento, la reasignación, la devolución y la firma. “Liberar contrato” inicia la generación del contrato usando la plantilla configurada y devuelve la tarea a Legal para revisarlo; Legal puede volver a generar el acuerdo/contrato con la opción “Generar contrato nuevamente”.</p></div>
+        <div class="diagram" data-glean-id="clm-legal-diagram">
+          <svg viewBox="0 0 760 255" role="img" aria-label="Legal Revisa se conecta a acciones de devolución, equipo, cancelación, documento y firma">
+            <defs>
+              <marker id="arrow-blue-2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L8 5L1 9" fill="none" stroke="context-stroke" stroke-width="1.5"></path></marker>
+              <marker id="arrow-neutral-2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L8 5L1 9" fill="none" stroke="context-stroke" stroke-width="1.5"></path></marker>
+            </defs>
+            <path class="edge-neutral" marker-end="url(#arrow-neutral-2)" data-route="normal return" d="M380 67V99H80V135M380 99H230V135M380 99H380V135M380 99H530V135M380 99H680V135"></path>
+            <path class="edge-warn" marker-end="url(#arrow-neutral-2)" data-route="uncertain" d="M380 67V207"></path>
+            <g class="node" data-route="normal return"><rect class="box-main" x="270" y="12" width="220" height="55" rx="8"></rect><text class="label" x="380" y="36" text-anchor="middle">Legal Revisa</text><text class="detail" x="380" y="53" text-anchor="middle">Tarea asignada al equipo Legal</text></g>
+            <g class="node" data-route="return"><rect class="box" x="5" y="135" width="150" height="60" rx="8"></rect><text class="label" x="80" y="159" text-anchor="middle">Devolver</text><text class="detail" x="80" y="177" text-anchor="middle">A Solicitante</text></g>
+            <g class="node" data-route="normal"><rect class="box" x="155" y="135" width="150" height="60" rx="8"></rect><text class="label" x="230" y="159" text-anchor="middle">Escoger grupo</text><text class="detail" x="230" y="177" text-anchor="middle">Solo sin contrato</text></g>
+            <g class="node" data-route="normal"><rect class="box" x="305" y="135" width="150" height="60" rx="8"></rect><text class="label" x="380" y="159" text-anchor="middle">Cancelar</text><text class="detail" x="380" y="177" text-anchor="middle">Cancela el proceso</text></g>
+            <g class="node" data-route="normal"><rect class="box" x="455" y="135" width="150" height="60" rx="8"></rect><text class="label" x="530" y="159" text-anchor="middle">Generar / liberar</text><text class="detail" x="530" y="177" text-anchor="middle">Genera contrato</text></g>
+            <g class="node" data-route="normal"><rect class="box" x="605" y="135" width="150" height="60" rx="8"></rect><text class="label" x="680" y="159" text-anchor="middle">Documento / firma</text><text class="detail" x="680" y="177" text-anchor="middle">Cargar, reemplazar o firmar</text></g>
+            <text class="tiny" x="380" y="218" text-anchor="middle"><tspan x="380" dy="0">“Cargar Documento” permite usar un documento de tercero o creado por el abogado.</tspan><tspan x="380" dy="14">Para firmar: seleccionar apoderados de OCESA y contar con apoderados de la contraparte.</tspan></text>
+          </svg>
+        </div>
+        
+      </section>
+
+      <section id="externa" data-glean-id="clm-external-review-section">
+        <div class="section-head"><p class="kicker">04 · REVISIÓN EXTERNA</p><h2>El documento devuelto debe pasar por el Motor de discrepancias</h2><p class="section-summary">Legal termina la revisión y devuelve la tarea al Solicitante.</p><p class="section-summary">Solicitante entonces decide enviar el documento a el revisor externo y este hace su revisión externa. </p><p class="section-summary"><ul><li>Si no se recibe documento (o hay error/expiración), el flujo regresa al Solicitante.</li><li>Si se recibe un documento, se dispara el Motor de discrepancias.</li></ul></p></div>
+        <div class="diagram" data-glean-id="clm-external-review-diagram">
+          <svg viewBox="0 0 980 315" role="img" aria-label="La respuesta externa sin documento vuelve al Solicitante; la respuesta con documento requiere conectar el Motor de discrepancias y luego regresar al Solicitante">
+            <defs>
+              <marker id="arrow-blue-3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L8 5L1 9" fill="none" stroke="context-stroke" stroke-width="1.5"></path></marker>
+              <marker id="arrow-warn-3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L8 5L1 9" fill="none" stroke="context-stroke" stroke-width="1.5"></path></marker>
+            </defs>
+            <path class="edge" marker-end="url(#arrow-blue-3)" data-route="external" d="M215 92H275"></path>
+            <path class="edge" marker-end="url(#arrow-blue-3)" data-route="external" d="M480 92H535"></path>
+            <path class="edge-warn" marker-end="url(#arrow-warn-3)" data-route="external discrepancy uncertain" d="M750 92H785"></path>
+            <path class="edge-warn" marker-end="url(#arrow-warn-3)" data-route="external discrepancy uncertain" d="M877 134V215"></path>
+            <path class="edge" marker-end="url(#arrow-blue-3)" data-route="external" d="M377 125V215"></path>
+            <path class="edge" marker-end="url(#arrow-blue-3)" data-route="external" d="M480 247H720"></path>
+            <g class="node" data-route="external"><rect class="box-main" x="10" y="60" width="205" height="65" rx="8"></rect><text class="label" x="112" y="85" text-anchor="middle">Preparar revisión externa</text><text class="detail" x="112" y="105" text-anchor="middle">El Solicitante envía</text></g>
+            <g class="node" data-route="external"><rect class="box" x="275" y="60" width="205" height="65" rx="8"></rect><text class="label" x="377" y="85" text-anchor="middle">Esperar respuesta</text><text class="detail" x="377" y="105" text-anchor="middle">Revisión de contraparte</text></g>
+            <g class="node" data-route="external"><rect class="box" x="535" y="50" width="215" height="84" rx="8"></rect><text class="label" x="642" y="78" text-anchor="middle">Documento recibido</text><text class="detail" x="642" y="98" text-anchor="middle">Refrescar documento</text><text class="detail" x="642" y="116" text-anchor="middle">y actualizar su estado</text></g>
+            <g class="node" data-route="external discrepancy uncertain"><rect class="box-warn" x="785" y="50" width="185" height="84" rx="8"></rect><text class="label" x="877" y="78" text-anchor="middle">Motor de discrepancias</text><text class="detail" x="877" y="99" text-anchor="middle"></text></g>
+            <g class="node" data-route="external"><rect class="box" x="275" y="215" width="205" height="64" rx="8"></rect><text class="label" x="377" y="240" text-anchor="middle">Sin documento / error</text><text class="detail" x="377" y="259" text-anchor="middle">Regresa al Solicitante</text></g>
+            <g class="node" data-route="external"><rect class="box" x="720" y="215" width="250" height="64" rx="8"></rect><text class="label" x="845" y="240" text-anchor="middle">Continúa el flujo principal</text><text class="detail" x="845" y="259" text-anchor="middle"></text></g>
+            <text class="tiny" x="766" y="39" text-anchor="middle">«Contraparte devuelve documento»</text>
+            <text class="tiny" x="900" y="179" text-anchor="middle">resultado</text>
+          </svg>
+        </div>
+        <p class="caveat" data-glean-id="clm-external-review-caveat"><strong>Acuerdo y ajuste:</strong> después de la rama “Contraparte devuelve documento” debe activarse el Motor. La rama sin documento/error/expiración regresa al Solicitante.</p>
+      </section>
+
+      <section id="discrepancias" data-glean-id="clm-discrepancy-section">
+        <div class="section-head"><p class="kicker">05 · ANÁLISIS Y DECISIÓN</p><h2>Motor de discrepancias</h2><p class="section-summary">El subflujo extrae controles (datos ingresados en el documento), los compara con los atributos definidos y presenta las diferencias a revisión de Solicitante y de Legal. </p><p class="section-summary">El acuerdo es activarlo tras “Contraparte devuelve documento”;</p></div>
+        <div class="diagram" data-glean-id="clm-discrepancy-diagram">
+          <svg viewBox="0 0 980 260" role="img" aria-label="El Motor de discrepancias extrae controles, compara atributos, asigna revisión a Solicitante o Legal y procesa la conciliación; la salida al flujo principal debe conectarse">
+            <defs>
+              <marker id="arrow-blue-discrepancy" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L8 5L1 9" fill="none" stroke="context-stroke" stroke-width="1.5"></path></marker>
+              <marker id="arrow-warn-discrepancy" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L8 5L1 9" fill="none" stroke="context-stroke" stroke-width="1.5"></path></marker>
+            </defs>
+            <path class="edge" marker-end="url(#arrow-blue-discrepancy)" data-route="discrepancy" d="M160 89H174"></path>
+            <path class="edge" marker-end="url(#arrow-blue-discrepancy)" data-route="discrepancy" d="M324 89H338"></path>
+            <path class="edge" marker-end="url(#arrow-blue-discrepancy)" data-route="discrepancy" d="M488 89H502"></path>
+            <path class="edge" marker-end="url(#arrow-blue-discrepancy)" data-route="discrepancy" d="M652 89H666"></path>
+            <path class="edge-warn" marker-end="url(#arrow-warn-discrepancy)" data-route="discrepancy uncertain" d="M816 89H830"></path>
+            <g class="node" data-route="discrepancy"><rect class="box-main" x="10" y="48" width="150" height="82" rx="8"></rect><text class="label" x="85" y="77" text-anchor="middle">Analizar documento</text><text class="detail" x="85" y="99" text-anchor="middle">Extraer controles</text></g>
+            <g class="node" data-route="discrepancy"><rect class="box" x="174" y="48" width="150" height="82" rx="8"></rect><text class="label" x="249" y="77" text-anchor="middle">Comparar</text><text class="detail" x="249" y="98" text-anchor="middle">Controles vs.</text><text class="detail" x="249" y="115" text-anchor="middle">atributos definidos</text></g>
+            <g class="node" data-route="discrepancy"><rect class="box" x="338" y="48" width="150" height="82" rx="8"></rect><text class="label" x="413" y="77" text-anchor="middle">Asignar revisión</text><text class="detail" x="413" y="98" text-anchor="middle">Solicitante</text><text class="detail" x="413" y="115" text-anchor="middle">o Legal</text></g>
+            <g class="node" data-route="discrepancy"><rect class="box" x="502" y="48" width="150" height="82" rx="8"></rect><text class="label" x="577" y="77" text-anchor="middle">Revisar cambios</text><text class="detail" x="577" y="98" text-anchor="middle">Revisión y</text><text class="detail" x="577" y="115" text-anchor="middle">conciliación</text></g>
+            <g class="node" data-route="discrepancy"><rect class="box" x="666" y="48" width="150" height="82" rx="8"></rect><text class="label" x="741" y="77" text-anchor="middle">Procesar decisión</text><text class="detail" x="741" y="98" text-anchor="middle">Colaborar · resuelto</text><text class="detail" x="741" y="115" text-anchor="middle">· sin cambios</text></g>
+            <g class="node" data-route="discrepancy uncertain"><rect class="box-warn" x="830" y="48" width="140" height="82" rx="8"></rect><text class="label" x="900" y="77" text-anchor="middle">Salida del Motor</text><text class="label" x="900" y="96" text-anchor="middle">al flujo principal</text><text class="detail" x="900" y="116" text-anchor="middle"></text></g>
+            <text class="tiny" x="490" y="179" text-anchor="middle">Activación acordada: después de “Contraparte devuelve documento”</text>
+          </svg>
+        </div>
+        <div><p class="section-summary">El motor de discrepancias actualmente considera la interacción del solicitante y de Legal para hacer este paso más ágil. Debe confirmarse si el Aprobador forma parte de los roles acordados para este Motor.</p></div>
+        <div class="route-copy">
+          <article data-glean-id="clm-discrepancy-reviewer-decision"><h3>Quién revisa</h3><p>Las tareas de revisión del Motor corresponden a Solicitante y Legal. Debe confirmarse si el Aprobador forma parte de los roles acordados para este Motor.</p></article>
+          <article data-glean-id="clm-discrepancy-entry-decision"><h3>Dónde se activa</h3><p>Acuerdo confirmado: se activa después de “Contraparte devuelve documento” y en los pasos del flujo principal donde sea requerido.</p></article>
+          <article data-glean-id="clm-discrepancy-return-decision"><h3>Qué pasa después</h3><p>Al terminar la revisión y conciliación, la salida debe reincorporarse al flujo principal.</p></article>
+        </div>
+      </section>
+      <section id="repse" data-glean-id="clm-signature-section">
+        <div class="section-head"><p class="kicker">06 · REPSE Y FIRMA</p><h2>La revisión fiscal es condicional</h2><p class="section-summary">Si Legal elige la rama de firma y existe REPSE, Fiscal define si se requieren datos de REPSE. </p><p class="section-summary">La preparación de firma puede ser tarea de Legal o envío automático.</p></div>
+        <div class="diagram" data-glean-id="clm-signature-diagram">
+          <svg viewBox="0 0 760 365" role="img" aria-label="Rama REPSE condicional con Fiscal, datos del Solicitante, preparación y envío a firma">
+            <defs>
+              <marker id="arrow-blue-4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L8 5L1 9" fill="none" stroke="context-stroke" stroke-width="1.5"></path></marker>
+              <marker id="arrow-warn-4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L8 5L1 9" fill="none" stroke="context-stroke" stroke-width="1.5"></path></marker>
+            </defs>
+            <path class="edge" marker-end="url(#arrow-blue-4)" data-route="repse" d="M170 61H215"></path>
+            <path class="edge" marker-end="url(#arrow-blue-4)" data-route="repse" d="M350 61H390"></path>
+            <path class="edge" marker-end="url(#arrow-blue-4)" data-route="repse" d="M520 61H560"></path>
+            <path class="edge" marker-end="url(#arrow-blue-4)" data-route="repse" d="M455 91V135H190V159"></path>
+            <path class="edge" marker-end="url(#arrow-blue-4)" data-route="repse" d="M625 91V135H190V159"></path>
+            <path class="edge-warn" marker-end="url(#arrow-warn-4)" data-route="repse uncertain" d="M455 91V120H700V159"></path>
+            <path class="edge" marker-end="url(#arrow-blue-4)" data-route="repse" d="M190 209V242H380V266"></path>
+            <path class="edge" marker-end="url(#arrow-blue-4)" data-route="repse" d="M700 209V242H380V266"></path>
+            <path class="edge" marker-end="url(#arrow-blue-4)" data-route="repse" d="M380 316V337"></path>
+            <g class="node" data-route="repse"><rect class="box-main" x="10" y="31" width="160" height="60" rx="8"></rect><text class="label" x="90" y="55" text-anchor="middle">Legal elige firma</text><text class="detail" x="90" y="74" text-anchor="middle">Si hay firmantes</text></g>
+            <g class="node" data-route="repse"><rect class="box" x="215" y="31" width="135" height="60" rx="8"></rect><text class="label" x="282" y="55" text-anchor="middle">¿REPSE?</text><text class="detail" x="282" y="74" text-anchor="middle">Validar requisito</text></g>
+            <g class="node" data-route="repse"><rect class="box" x="390" y="31" width="130" height="60" rx="8"></rect><text class="label" x="455" y="55" text-anchor="middle">Fiscal Revisa</text><text class="detail" x="455" y="74" text-anchor="middle">Equipo Fiscal</text></g>
+            <g class="node" data-route="repse"><rect class="box" x="560" y="31" width="190" height="60" rx="8"></rect><text class="label" x="655" y="55" text-anchor="middle">Contraparte / ambas</text><text class="detail" x="655" y="74" text-anchor="middle">Solicitante captura datos</text></g>
+            <g class="node" data-route="repse"><rect class="box-success" x="45" y="159" width="290" height="50" rx="8"></rect><text class="label" x="190" y="181" text-anchor="middle">Sin REPSE / OCESA</text><text class="detail" x="190" y="198" text-anchor="middle">Continúa a preparación o envío</text></g>
+            <g class="node" data-route="repse"><rect class="box" x="555" y="159" width="290" height="50" rx="8"></rect><text class="label" x="700" y="181" text-anchor="middle">Devolver a Legal</text><text class="detail" x="700" y="198" text-anchor="middle">Fiscal usa la salida genérica “Otro”</text></g>
+            <g class="node" data-route="repse"><rect class="box-main" x="215" y="266" width="330" height="50" rx="8"></rect><text class="label" x="380" y="288" text-anchor="middle">Preparar Firma (Legal) o enviar automáticamente</text><text class="detail" x="380" y="305" text-anchor="middle">La ruta elegida define tarea o automatización</text></g>
+            <g class="node" data-route="repse"><rect class="box" x="215" y="337" width="330" height="27" rx="7"></rect><text class="detail" x="380" y="355" text-anchor="middle">Firmantes configurados → firmado / rechazo / expiración / cancelación</text></g>
+            <text class="tiny" x="282" y="112" text-anchor="middle">No</text><text class="tiny" x="365" y="112" text-anchor="middle">Sí</text>
+          </svg>
+        </div>
+        <!--<p class="caveat" data-glean-id="clm-repse-caveat"><strong>Por validar:</strong> “Devolver a Legal” en Fiscal se conecta por la salida genérica “Otro”, no por una condición específica. No se ve claramente quién asigna al usuario Fiscal antes de crear esa tarea.</p> -->
+      </section>
+
+      <section id="roles" data-glean-id="clm-role-section">
+        <div class="section-head"><p class="kicker">07 · ROLES Y RESPONSABLES</p><h2>Quién completa cada tarea</h2><p class="section-summary">Los roles listados son los equipos/usuarios definidos en la configuración. <br>Los firmantes externos participan en eSignature como destinatarios, no como asignados a tareas CLM.</p></div>
+        <div class="roles-wrap" data-glean-id="clm-role-table">
+          <table><thead><tr><th>Tarea</th><th>Responsable</th><th>Cuándo interviene</th></tr></thead><tbody>
+            <tr data-glean-id="role-approver"><td>Aprobador aprueba</td><td>Equipo Aprobador</td><td>Revisa y decide aprobar, rechazar o cancelar tanto solicitud como contrato.</td></tr>
+            <tr data-glean-id="role-requester-review"><td>Solicitante Revisa</td><td>Equipo Solicitante</td><td>Resuelve el rechazo del Aprobador o una devolución de Legal.</td></tr>
+            <tr data-glean-id="role-legal-review"><td>Legal Revisa</td><td>Equipo Legal</td><td>Revisa solicitud o contrato y elige la siguiente acción.</td></tr>
+            <tr data-glean-id="role-select-group"><td>Escoge grupo</td><td>Legal</td><td>Reasigna a otro grupo/Equipo Legal; aparece solo cuando todavía no existe contrato.</td></tr>
+            <tr data-glean-id="role-external-review"><td>Preparar revisión externa</td><td>Equipo Solicitante</td><td>Prepara la revisión externa; cancelación habilitada para Legal.</td></tr>
+            <tr data-glean-id="role-discrepancy-review"><td>Revisión de discrepancias</td><td>Solicitante o Legal</td><td>Revisa cambios y concilia controles con atributos.</td></tr>
+            <tr data-glean-id="role-fiscal-review"><td>Tareas “Fiscal”</td><td>Grupo Fiscal</td><td>El grupo Fiscal revisará las tareas que se le asignen.</td></tr>
+            <tr data-glean-id="role-requester-data"><td>Captura datos REPSE</td><td>Equipo Solicitante</td><td>Captura los datos REPSE de la contraparte cuando corresponde.</td></tr>
+            <tr data-glean-id="role-prepare-signature"><td>Preparar Firma</td><td>Legal</td><td>Prepara la firma; existe también una rama automática.</td></tr>
+          </tbody></table>
+        </div>
+      </section>
+
+      <!-- <section id="validaciones" data-glean-id="clm-validation-section">
+        <div class="section-head"><p class="kicker">07 · AJUSTES DE CONFIGURACIÓN</p><h2>Acuerdos reflejados; acciones técnicas pendientes</h2><p class="section-summary">Las decisiones de negocio sobre las rutas descritas están confirmadas. Las líneas discontinuas señalan conexiones o elementos que todavía deben añadirse al flujo.</p></div>
+        <ul class="notes">
+          <li><strong>Aprobación → Legal:</strong> configurar “Aprobar y continuar” para crear/continuar con una tarea de Legal; la regla actual de continuación no la habilita explícitamente.</li>
+          <li><strong>Enviar a Legal:</strong> separar esta opción de “Enviar a Aprobador” y conectarla con una nueva tarea “Legal Revisa”.</li>
+          <li><strong>Contraparte devuelve documento → Motor:</strong> crear la rama y conectar la llamada al Motor después de esa devolución; después, conectar su salida al flujo principal. Los revisores acordados son Solicitante y Legal.</li>
+          <li><strong>Generación de contrato:</strong> completar la regla de continuación de “Liberar contrato” / “Generar contrato nuevamente” y verificar el retorno de la tarea a Legal.</li>
+          <li><strong>Grupo Fiscal:</strong> crear el grupo Fiscal y asignarlo a las tareas “Fiscal” para que el grupo pueda revisarlas.</li>
+          <li><strong>Otras rutas:</strong> siguen por revisar las condiciones de sincronización de atributos, preparación de firma y disponibilidad de firmantes.</li>
+        </ul>
+        <p class="source" data-glean-id="clm-source-note">Diagrama de trabajo basado en los flujos CLM revisados y en los acuerdos confirmados. Las líneas sólidas representan conexiones configuradas; las discontinuas, ajustes aún no aplicados.</p>
+      </section> -->
+      <p class="footer">Usa los controles superiores para resaltar rutas.</p>
+    </div>
+  </div>
+</main>
+<script>
+(function () {
+  var controls = document.querySelectorAll('[data-focus]');
+  var routed = document.querySelectorAll('svg [data-route]');
+  controls.forEach(function (button) {
+    button.addEventListener('click', function () {
+      var selected = button.getAttribute('data-focus');
+      controls.forEach(function (control) { control.setAttribute('aria-pressed', control === button ? 'true' : 'false'); });
+      routed.forEach(function (item) {
+        var routes = (item.getAttribute('data-route') || '').split(/\s+/);
+        item.classList.toggle('dimmed', selected !== 'all' && routes.indexOf(selected) === -1);
+      });
+    });
+  });
+  if (!window.GleanBridge) return;
+  window.GleanBridge.postMessage({actionId:'export-pdf',type:'glean-add-menu',metadata:{label:'Export as PDF',icon:'export'}});
+  window.GleanBridge.onMessage('action', function (data) { if (data.actionId === 'export-pdf') window.print(); });
+  function prepareChartsForPrint() {
+    document.querySelectorAll('[_echarts_instance_]').forEach(function (el) {
+      var chart = window.echarts && window.echarts.getInstanceByDom(el);
+      if (!chart) return;
+      var image = new Image(); image.src = chart.getDataURL({type:'png',pixelRatio:2}); image.className = 'print-chart-img';
+      image.style.cssText = 'width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;z-index:10;';
+      el.dataset.prevPosition = el.style.position; el.style.position = 'relative'; el.appendChild(image);
+    });
+  }
+  function cleanUpAfterPrint() {
+    document.querySelectorAll('[_echarts_instance_]').forEach(function (el) {
+      var image = el.querySelector('.print-chart-img'); if (!image) return;
+      image.remove(); el.style.position = el.dataset.prevPosition || ''; delete el.dataset.prevPosition;
+    });
+  }
+  window.addEventListener('beforeprint', prepareChartsForPrint);
+  window.addEventListener('afterprint', cleanUpAfterPrint);
+})();
+</script>
+
+<footer data-glean-ai-provenance="visible" role="contentinfo">Co-authored with AI from Glean · gen:28144e6dc9c24d74bd63eaf9119a9a29.5 · 2026-11-23T19:48:10Z</footer></body></html>
